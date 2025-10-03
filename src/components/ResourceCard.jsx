@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, CardContent, Typography, Button, CardActions, Chip, Stack } from "@mui/material";
+import { Card, CardContent, Typography, Button } from "@mui/material";
 
-export default function ResourceCard({ resource, category }) {
+export default function ResourceCard({ resource, category, subcategory }) {
   return (
     <Card variant="outlined">
       <CardContent>
@@ -10,31 +10,16 @@ export default function ResourceCard({ resource, category }) {
           {resource.description}
         </Typography>
 
-        {/* Categoría */}
-        {category && (
-          <Typography variant="caption" color="primary" display="block" gutterBottom>
-            {category.icon} {category.name}
+        {category && subcategory && (
+          <Typography variant="caption" color="primary" display="block">
+            {category.icon} {category.name} / {subcategory.name}
           </Typography>
         )}
-
-        {/* Tags */}
-        <Stack direction="row" spacing={1} style={{ marginBottom: "0.5rem", flexWrap: "wrap" }}>
-          {resource.tags.map(tag => (
-            <Chip key={tag} label={`#${tag}`} size="small" />
-          ))}
-        </Stack>
-
-        {/* Gratis / Premium y Rating */}
-        <Typography variant="body2" color="textSecondary">
-          {resource.isFree ? "Gratis" : "Premium"} · ⭐ {resource.rating}
-        </Typography>
       </CardContent>
 
-      <CardActions>
-        <Button size="small" color="primary" href={resource.url} target="_blank" rel="noreferrer">
-          Ir al recurso
-        </Button>
-      </CardActions>
+      <Button size="small" color="primary" href={resource.url} target="_blank" rel="noreferrer">
+        Ir al recurso
+      </Button>
     </Card>
   );
 }

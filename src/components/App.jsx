@@ -7,13 +7,14 @@ import {
   Typography,
   TextField,
   Grid,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
+  Divider,
+  Stack,
+  Box,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import ResourceCard from "./ResourceCard";
-import { resources, categories } from "../data/examples";
+import { resources, categories, subcategories } from "../data/examples";
 
 const darkTheme = createTheme({
   palette: {
@@ -24,64 +25,111 @@ const darkTheme = createTheme({
 });
 
 export default function App() {
-  const [q, setQ] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [query, setQuery] = useState("");
 
-  // Filtrado por categoría y búsqueda
-  const filtered = resources
-    .filter(r => (categoryId ? r.categoryId === categoryId : true))
-    .filter(r =>
-      (r.title + r.description + r.tags.join(" "))
-        .toLowerCase()
-        .includes(q.toLowerCase())
-    )
-    .sort((a, b) => b.rating - a.rating); // ordenar por rating descendente
+  // Filtrado global de recursos según buscador
+  const filteredResources = resources.filter(r =>
+    (r.title + r.description).toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <Container maxWidth="md" style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
+
+      {/* Sidebar con iconos de categorías */}
+      <Box
+        sx={{
+          position: "fixed",
+          top: "50%",
+          left: 16,
+          transform: "translateY(-50%)",
+          zIndex: 1000,
+        }}
+      >
+        <Stack spacing={2}>
+          {categories.map(c => (
+            <Tooltip key={c.id} title={c.name} placement="right">
+              <IconButton
+                color="primary"
+                onClick={() => {
+                  document.getElementById(`category-${c.id}`)?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }}
+              >
+                <span style={{ fontSize: "1.5rem" }}>{c.icon}</span>
+              </IconButton>
+            </Tooltip>
+          ))}
+        </Stack>
+      </Box>
+
+      {/* Contenido principal */}
+      <Container maxWidth="md" sx={{ paddingLeft: "80px", paddingTop: "2rem", paddingBottom: "2rem" }}>
         <Typography variant="h4" gutterBottom>
           Recursos para desarrolladores
         </Typography>
 
-        {/* Filtros */}
+        {/* Buscador */}
         <TextField
           fullWidth
           label="Buscar..."
           variant="outlined"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          style={{ marginBottom: "1rem" }}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          sx={{ marginBottom: "2rem" }}
         />
 
-        <FormControl fullWidth variant="outlined" style={{ marginBottom: "1rem" }}>
-          <InputLabel id="category-label">Categoría</InputLabel>
-          <Select
-            labelId="category-label"
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            label="Categoría"
-          >
-            <MenuItem value="">
-              <em>Todo</em>
-            </MenuItem>
-            {categories.map(c => (
-              <MenuItem key={c.id} value={c.id}>
-                {c.icon} {c.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Stack spacing={4}>
+          {/* Recorrer categorías */}
+          {categories.map(category => {
+            const subcats = subcategories.filter(sc => sc.categoryId === category.id);
 
-        {/* Grid de recursos */}
-        <Grid container spacing={2}>
-          {filtered.map(r => (
-            <Grid item xs={12} sm={6} key={r.id}>
-              <ResourceCard resource={r} category={categories.find(c => c.id === r.categoryId)} />
-            </Grid>
-          ))}
-        </Grid>
+            // Subcategorías que tengan recursos visibles
+            const subcatsWithResources = subcats.filter(subcat =>
+              filteredResources.some(r => r.categoryId === category.id && r.subcategoryId === subcat.id)
+            );
+
+            // Si no hay subcategorías con recursos, no mostramos la categoría
+            if (!subcatsWithResources.length) return null;
+
+            return (
+              <div key={category.id}>
+                <Typography variant="h5" gutterBottom id={`category-${category.id}`}>
+                  {category.icon} {category.name}
+                </Typography>
+                <Divider sx={{ marginBottom: "1rem" }} />
+
+                {/* Recorrer subcategorías */}
+                {subcatsWithResources.map(subcat => {
+                  const resInSubcat = filteredResources.filter(
+                    r => r.categoryId === category.id && r.subcategoryId === subcat.id
+                  );
+
+                  return (
+                    <div key={subcat.id} style={{ marginBottom: "2rem" }}>
+                      <Typography variant="h6" gutterBottom>
+                        {subcat.name}
+                      </Typography>
+                      <Grid container spacing={2}>
+                        {resInSubcat.map(r => (
+                          <Grid item xs={12} sm={6} key={r.id}>
+                            <ResourceCard
+                              resource={r}
+                              category={category}
+                              subcategory={subcat}
+                            />
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </Stack>
       </Container>
     </ThemeProvider>
   );
